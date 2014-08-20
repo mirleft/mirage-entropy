@@ -39,9 +39,7 @@ type handler = source:int -> buffer -> unit
 type t = { mutable handler : handler option }
 
 let connect () =
-  Random.self_init ();
-  print_endline "Entropy_xen_weak: using a weak entropy source seeded only from time.";
-  return (`Ok { handler = None })
+  return (`Error (`No_entropy_device "nothing on XEN yet, sorry"))
 
 let disconnect _ = return_unit
 
@@ -49,6 +47,7 @@ let id _ = ()
 
 let chunk = 16
 
+(* this code is using OCaml's weak RNG, better not use it *)
 let refeed t =
   match t.handler with
   | None   -> ()
