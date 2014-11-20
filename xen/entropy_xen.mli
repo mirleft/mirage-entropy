@@ -25,4 +25,4 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-include V1_LWT.ENTROPY with type id = unit
+module Make (Seed : sig val seed : string end) : V1_LWT.ENTROPY with type id = unit

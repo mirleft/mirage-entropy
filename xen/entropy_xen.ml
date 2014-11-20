@@ -28,38 +28,40 @@
 
 open Lwt
 
-type id = unit
+module Make (Seed : sig val seed : string end) = struct
+  type id = unit
 
-type 'a io  = 'a Lwt.t
-type buffer = Cstruct.t
-type error  = [ `No_entropy_device of string ]
+  type 'a io  = 'a Lwt.t
+  type buffer = Cstruct.t
+  type error  = [ `No_entropy_device of string ]
 
-type handler = source:int -> buffer -> unit
+  type handler = source:int -> buffer -> unit
 
-type t = { mutable handler : handler option }
+  type t = { mutable handler : handler option }
 
-let connect () =
-  Random.self_init ();
-  print_endline "Entropy_xen_weak: using a weak entropy source seeded only from time.";
-  return (`Ok { handler = None })
+  let connect () =
+    Random.self_init ();
+    print_endline "Entropy_xen: using entropy source seeded at unikernel compile-time.";
+    return (`Ok { handler = None })
 
-let disconnect _ = return_unit
+  let disconnect _ = return_unit
 
-let id _ = ()
+  let id _ = ()
 
-let chunk = 16
+  let chunk = 16
 
-let refeed t =
-  match t.handler with
-  | None   -> ()
-  | Some f ->
-      let s  = Random.int 256
+  let refeed t =
+    match t.handler with
+    | None   -> ()
+    | Some f ->
+      let seed_len = Bytes.length Seed.seed in
+      let s  = Random.int seed_len
       and cs = Cstruct.create chunk in
       for i = 0 to chunk - 1 do
-        Cstruct.set_uint8 cs i Random.(int 256)
+        Cstruct.set_char cs i Seed.seed.[(s + i) mod seed_len]
       done ;
       f ~source:s cs
 
-let handler t f =
-  t.handler <- Some f ; refeed t ; return_unit
-
+  let handler t f =
+    t.handler <- Some f ; refeed t ; return_unit
+end
