@@ -10,7 +10,7 @@
 * Remove `mirage-entropy-unix` from the repository; it now only contains `mirage-entropy-xen`.
 * Add internal entropy harvesting via timing and CPU RNG if available.
 * Temporarily disable `xentropyd`.
-* The API is no longer `V1.ENTROPY` compatible.
+* The API is no longer `Mirage_types.ENTROPY` compatible.
 
 # 0.2.0 (09-Mar-2015)
 
@@ -28,7 +28,7 @@
 
 # 0.1.4 (04-July-2014)
 
-* provide Mirage 1.2.0 interfaces (`V1_LWT.ENTROPY`).
+* provide Mirage 1.2.0 interfaces (`Mirage_types_lwt.ENTROPY`).
 * name modules `Entropy_xen` and `Entropy_unix` to not clash.
 
 # 0.1.3 (03-July-2014)
