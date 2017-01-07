@@ -215,7 +215,7 @@ module BufferedConsole = struct
 end
 *)
 
-(* module Make(T : V1_LWT.TIME) = struct *)
+(* module Make(T : Mirage_types_lwt.TIME) = struct *)
 
 (*
 type id = [ `From_host | `Weak ]
