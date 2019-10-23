@@ -12,12 +12,14 @@ let pp_cs ppf cs =
 let handler ~source buf =
   Format.printf "recv: (src:%d) %a%!" source pp_cs buf
 
+module Entropy_unix = Entropy.Make(Mirage_unix_main)
+
 let with_entropy act =
-  Entropy.connect () >>= fun t ->
+  Entropy_unix.connect () >>= fun t ->
     Entropy.add_handler t handler >>= fun _tok ->
       act () >>= fun res ->
         Entropy.disconnect t >|= fun () -> res
 
 let () =
-  Mirage_OS.OS.(Main.run (with_entropy (fun () ->
+  OS.(Main.run (with_entropy (fun () ->
     Time.sleep_ns 1_000L)))

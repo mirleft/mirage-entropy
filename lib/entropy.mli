@@ -41,7 +41,10 @@ type source = [
 ]
 
 val sources : t -> source list
-val connect : unit -> t io
 val disconnect : t -> unit io
 val add_handler : t -> handler -> token io
 val remove_handler : t -> token -> unit
+
+module Make (Main : Mirage_main.S) : sig
+  val connect : unit -> t io
+end

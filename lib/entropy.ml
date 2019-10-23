@@ -45,7 +45,6 @@ module Cpu_native = struct
 end
 
 open Lwt.Infix
-open Mirage_OS
 
 type 'a io   = 'a Lwt.t
 type buffer  = Cstruct.t
@@ -106,22 +105,24 @@ let interrupt_hook () =
         Cstruct.LE.set_uint64 buf 4 (Int64.of_int b) ;
         buf
 
-(* XXX TODO
- *
- * Xentropyd. Detect its presence here, make it feed into `t.handlers` as
- * `~source:1` and add a function providing initial entropy burst to
- * `t.inits`.
- *
- * Compile-time entropy. A function returning it could go into `t.inits`.
- *)
-let connect () =
-  let t    = { handlers = [] ; inits = [ bootstrap ] }
-  and hook = interrupt_hook () in
-  OS.Main.at_enter_iter (fun () ->
-    match t.handlers with
-    | [] -> ()
-    | xs -> let e = hook () in List.iter (fun h -> h ~source:0 e) xs) ;
-  Lwt.return t
+module Make (Main : Mirage_main.S) = struct
+  (* XXX TODO
+   *
+   * Xentropyd. Detect its presence here, make it feed into `t.handlers` as
+   * `~source:1` and add a function providing initial entropy burst to
+   * `t.inits`.
+   *
+   * Compile-time entropy. A function returning it could go into `t.inits`.
+   *)
+  let connect () =
+    let t    = { handlers = [] ; inits = [ bootstrap ] }
+    and hook = interrupt_hook () in
+    Main.at_enter_iter (fun () ->
+      match t.handlers with
+      | [] -> ()
+      | xs -> let e = hook () in List.iter (fun h -> h ~source:0 e) xs) ;
+    Lwt.return t
+end
 
 let add_handler t f =
   t.handlers <- f :: t.handlers ;
