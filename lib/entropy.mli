@@ -29,13 +29,12 @@
 type t
 
 type source = [
-    `Timer
+  | `Timer
   | `Rdseed
   | `Rdrand
-  | `Xentropyd
 ]
 
-val sources : t -> source list
+val sources : unit -> source list
 
 val connect : ?g:'a -> (module Mirage_crypto_rng.Generator with type g = 'a) -> t Lwt.t
 

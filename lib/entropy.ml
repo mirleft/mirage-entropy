@@ -52,7 +52,6 @@ type source = [
     `Timer
   | `Rdseed
   | `Rdrand
-  | `Xentropyd
 ]
 
 let sources () =
@@ -115,7 +114,7 @@ let connect (type a) ?g (rng : a Mirage_crypto_rng.generator) =
   let hook = interrupt_hook () in
   Mirage_crypto_rng.generator := rng;
   Mirage_runtime.at_enter_iter (fun () ->
-      let `Acc andler = Mirage_crypto_rng.accumulate None in
+      let `Acc handler = Mirage_crypto_rng.accumulate None in
       let e = hook () in
       handler ~source:0 e)
 
