@@ -108,13 +108,14 @@ let bootstrap_functions = [ bootstrap ]
 
 let connect (type a) ?g (rng : a Mirage_crypto_rng.generator) =
   let rng = Mirage_crypto_rng.(create ?g rng) in
-  Mirage_crypto_rng.generator := rng;
   let `Acc handler = Mirage_crypto_rng.accumulate (Some rng) in
   Lwt_list.iteri_p
     (fun i boot -> boot (handler ~source:i))
     bootstrap_functions >|= fun () ->
   let hook = interrupt_hook () in
+  Mirage_crypto_rng.generator := rng;
   Mirage_runtime.at_enter_iter (fun () ->
+      let `Acc andler = Mirage_crypto_rng.accumulate None in
       let e = hook () in
       handler ~source:0 e)
 
