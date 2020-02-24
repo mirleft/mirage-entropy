@@ -2,22 +2,33 @@ open Lwt.Infix
 
 let fpr ppf fmt = Format.fprintf ppf fmt
 
-let pp_cs ppf cs =
-  fpr ppf "@,";
-  for i = 0 to Cstruct.len cs - 1 do
-    fpr ppf "%02x" (Cstruct.get_uint8 cs i)
-  done;
-  fpr ppf "@,"
+module Print_rng = struct
+  type g = unit
 
-let handler ~source buf =
-  Format.printf "recv: (src:%d) %a%!" source pp_cs buf
+  let block = 16
+
+  let create () = ()
+
+  let generate ~g:_ _n = assert false
+
+  let reseed ~g:_ data =
+    Format.printf "reseeding: %a@.%!" Cstruct.hexdump_pp data
+
+  let accumulate ~g:_ =
+    let print ~source data =
+      Format.printf "accumulate: (src:%d) %a@.%!" source Cstruct.hexdump_pp data
+    in
+    `Acc print
+
+  let seeded ~g:_ = true
+end
 
 let with_entropy act =
-  Entropy.connect () >>= fun t ->
-    Entropy.add_handler t handler >>= fun _tok ->
-      act () >>= fun res ->
-        Entropy.disconnect t >|= fun () -> res
+  Entropy.connect (module Print_rng) >>= fun t ->
+  act () >>= fun res ->
+  Entropy.disconnect t >|= fun () ->
+  res
 
 let () =
   OS.(Main.run (with_entropy (fun () ->
-    Time.sleep_ns 1_000L)))
+      Time.sleep_ns 1_000L)))

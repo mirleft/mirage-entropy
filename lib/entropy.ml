@@ -46,14 +46,7 @@ end
 
 open Lwt.Infix
 
-type handler = source:int -> Cstruct.t -> unit
-
-type t = {
-  mutable handlers : handler list ;
-  inits : ((Cstruct.t -> unit) -> unit Lwt.t) list
-}
-
-type token = handler
+type t = unit
 
 type source = [
     `Timer
@@ -62,7 +55,7 @@ type source = [
   | `Xentropyd
 ]
 
-let sources _ =
+let sources () =
   `Timer ::
   match Cpu_native.cpu_rng with
   | Some x -> [x]
@@ -105,29 +98,24 @@ let interrupt_hook () =
 
 (* XXX TODO
  *
- * Xentropyd. Detect its presence here, make it feed into `t.handlers` as
+ * Xentropyd. Detect its presence here, make it feed into `t.handler` as
  * `~source:1` and add a function providing initial entropy burst to
  * `t.inits`.
  *
  * Compile-time entropy. A function returning it could go into `t.inits`.
- *)
-let connect () =
-  let t    = { handlers = [] ; inits = [ bootstrap ] }
-  and hook = interrupt_hook () in
+*)
+let bootstrap_functions = [ bootstrap ]
+
+let connect (type a) ?g (rng : a Mirage_crypto_rng.generator) =
+  let rng = Mirage_crypto_rng.(create ?g rng) in
+  Mirage_crypto_rng.generator := rng;
+  let `Acc handler = Mirage_crypto_rng.accumulate (Some rng) in
+  Lwt_list.iteri_p
+    (fun i boot -> boot (handler ~source:i))
+    bootstrap_functions >|= fun () ->
+  let hook = interrupt_hook () in
   Mirage_runtime.at_enter_iter (fun () ->
-    match t.handlers with
-    | [] -> ()
-    | xs -> let e = hook () in List.iter (fun h -> h ~source:0 e) xs) ;
-  Lwt.return t
+      let e = hook () in
+      handler ~source:0 e)
 
-let add_handler t f =
-  t.handlers <- f :: t.handlers ;
-  Lwt_list.iteri_p (fun i boot -> boot (f ~source:i)) t.inits >|= fun () ->
-  f
-
-let remove_handler t token =
-  t.handlers <- List.filter (fun f -> not (f == token)) t.handlers
-
-let disconnect t =
-  t.handlers <- [] ;
-  Lwt.return_unit
+let disconnect () = Lwt.return_unit

@@ -28,9 +28,6 @@
 
 type t
 
-type handler = source:int -> Cstruct.t -> unit
-type token
-
 type source = [
     `Timer
   | `Rdseed
@@ -39,7 +36,7 @@ type source = [
 ]
 
 val sources : t -> source list
-val connect : unit -> t Lwt.t
+
+val connect : ?g:'a -> (module Mirage_crypto_rng.Generator with type g = 'a) -> t Lwt.t
+
 val disconnect : t -> unit Lwt.t
-val add_handler : t -> handler -> token Lwt.t
-val remove_handler : t -> token -> unit
